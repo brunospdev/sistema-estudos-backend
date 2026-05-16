@@ -2,6 +2,7 @@ package com.planejamais.controller;
 
 import com.planejamais.dto.*;
 import com.planejamais.service.DisciplinaService;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -40,5 +41,27 @@ public class DisciplinaController {
                                         @AuthenticationPrincipal UserDetails user) {
         disciplinaService.excluir(id, user.getUsername());
         return ResponseEntity.noContent().build();
+    }
+
+    // Endpoints de tópicos dentro de disciplina
+    @PostMapping("/{id}/topicos")
+    public ResponseEntity<DisciplinaResponse.TopicoResponse> adicionarTopico(
+            @PathVariable Long id,
+            @RequestBody TopicoRequest request,
+            @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(disciplinaService.adicionarTopico(id, request.getNome(), user.getUsername()));
+    }
+
+    @PatchMapping("/{disciplinaId}/topicos/{topicoId}/toggle")
+    public ResponseEntity<DisciplinaResponse.TopicoResponse> toggleTopico(
+            @PathVariable Long disciplinaId,
+            @PathVariable Long topicoId,
+            @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(disciplinaService.toggleTopico(disciplinaId, topicoId, user.getUsername()));
+    }
+
+    @Data
+    static class TopicoRequest {
+        private String nome;
     }
 }
