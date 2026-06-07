@@ -1,0 +1,30 @@
+# Maven
+target/
+.mvn/wrapper/maven-wrapper.jar
+
+# Compiled files
+*.class
+*.jar
+*.war
+*.ear
+
+# Environment & secrets
+.env
+application-local.properties
+
+# macOS
+.DS_Store
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Logs
+*.log
+logs/
+
+# Spring Boot
+spring-shell.log
