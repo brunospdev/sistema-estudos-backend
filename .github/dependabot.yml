@@ -1,0 +1,13 @@
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /StudyHub/sistema-estudos-backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: npm
+    directory: /StudyHub/sistema-estudos-frontend/planeja-app
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
