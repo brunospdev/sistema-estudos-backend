@@ -8,4 +8,6 @@ public class DisciplinaRequest {
 
     @NotBlank(message = "Nome da disciplina é obrigatório.")
     private String nome;
+
+    private Long parentId;
 }

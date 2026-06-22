@@ -19,6 +19,10 @@ public class UsuarioService extends BaseService {
     private final ConfiguracaoPomodoroRepository configRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final PreferenciasUsuarioRepository preferenciasRepository;
+    private final MarcoUsuarioRepository marcoRepository;
+    private final SessaoEstudoRepository sessaoRepository;
+    private final EventoStatusRepository eventoStatusRepository;
 
     public UsuarioService(UsuarioRepository usuarioRepository,
                           DisciplinaRepository disciplinaRepository,
@@ -26,7 +30,11 @@ public class UsuarioService extends BaseService {
                           RegistroEstudoDiarioRepository registroRepository,
                           ConfiguracaoPomodoroRepository configRepository,
                           RefreshTokenRepository refreshTokenRepository,
-                          PasswordResetTokenRepository passwordResetTokenRepository) {
+                          PasswordResetTokenRepository passwordResetTokenRepository,
+                          PreferenciasUsuarioRepository preferenciasRepository,
+                          MarcoUsuarioRepository marcoRepository,
+                          SessaoEstudoRepository sessaoRepository,
+                          EventoStatusRepository eventoStatusRepository) {
         super(usuarioRepository);
         this.disciplinaRepository = disciplinaRepository;
         this.assuntoRepository = assuntoRepository;
@@ -34,6 +42,10 @@ public class UsuarioService extends BaseService {
         this.configRepository = configRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.preferenciasRepository = preferenciasRepository;
+        this.marcoRepository = marcoRepository;
+        this.sessaoRepository = sessaoRepository;
+        this.eventoStatusRepository = eventoStatusRepository;
     }
 
     public PerfilResponse obterPerfil(String email) {
@@ -74,6 +86,10 @@ public class UsuarioService extends BaseService {
             disciplinaRepository.deleteByUsuario_Id(usuarioId);
         }
 
+        eventoStatusRepository.deleteByUsuario_Id(usuarioId);
+        sessaoRepository.deleteByUsuario_Id(usuarioId);
+        marcoRepository.deleteByUsuario_Id(usuarioId);
+        preferenciasRepository.deleteByUsuario_Id(usuarioId);
         registroRepository.deleteByUsuario_Id(usuarioId);
         configRepository.deleteByUsuario_Id(usuarioId);
         refreshTokenRepository.revokeAllByUsuarioId(usuarioId);

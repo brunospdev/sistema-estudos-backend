@@ -1,16 +1,22 @@
 package com.planejamais.service;
 
+import com.planejamais.domain.LayoutMode;
+import com.planejamais.domain.StatusEstudo;
+import com.planejamais.domain.TipoItem;
 import com.planejamais.dto.*;
 import com.planejamais.entity.*;
+import com.planejamais.exception.ResourceNotFoundException;
 import com.planejamais.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class EstudoService extends BaseService {
@@ -19,13 +25,25 @@ public class EstudoService extends BaseService {
 
     private final RegistroEstudoDiarioRepository registroRepository;
     private final ConfiguracaoPomodoroRepository configRepository;
+    private final SessaoEstudoRepository sessaoRepository;
+    private final AssuntoRepository assuntoRepository;
+    private final DisciplinaRepository disciplinaRepository;
+    private final EventoStatusRepository eventoStatusRepository;
 
     public EstudoService(UsuarioRepository usuarioRepository,
                          RegistroEstudoDiarioRepository registroRepository,
-                         ConfiguracaoPomodoroRepository configRepository) {
+                         ConfiguracaoPomodoroRepository configRepository,
+                         SessaoEstudoRepository sessaoRepository,
+                         AssuntoRepository assuntoRepository,
+                         DisciplinaRepository disciplinaRepository,
+                         EventoStatusRepository eventoStatusRepository) {
         super(usuarioRepository);
         this.registroRepository = registroRepository;
         this.configRepository = configRepository;
+        this.sessaoRepository = sessaoRepository;
+        this.assuntoRepository = assuntoRepository;
+        this.disciplinaRepository = disciplinaRepository;
+        this.eventoStatusRepository = eventoStatusRepository;
     }
 
     private ConfiguracaoPomodoro getOuCriarConfig(Usuario usuario) {
@@ -59,14 +77,69 @@ public class EstudoService extends BaseService {
     }
 
     @Transactional
-    public SessaoEstudoResponse registrarSessao(String email) {
+    public SessaoEstudoResponse registrarSessao(String email, SessaoEstudoRequest request) {
         Usuario usuario = getUsuario(email);
-        LocalDate hoje = LocalDate.now();
 
-        RegistroEstudoDiario registro = registroRepository.findByUsuarioAndData(usuario, hoje)
+        if (request.getFimEm().isBefore(request.getInicioEm())) {
+            throw new IllegalArgumentException("fimEm deve ser posterior a inicioEm.");
+        }
+
+        int duracaoMinutos = (int) Duration.between(request.getInicioEm(), request.getFimEm()).toMinutes();
+        if (duracaoMinutos <= 0) {
+            duracaoMinutos = 1;
+        }
+
+        Assunto assunto = null;
+        Disciplina disciplina = null;
+
+        if (request.getAssuntoId() != null) {
+            assunto = assuntoRepository.findByIdAndDisciplina_Usuario_Id(request.getAssuntoId(), usuario.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Assunto não encontrado."));
+            if (!isTipoEstudavel(assunto.getTipo())) {
+                throw new IllegalArgumentException("Sessões de estudo só podem ser vinculadas a itens de conteúdo, revisão ou prática.");
+            }
+            disciplina = assunto.getDisciplina();
+        } else if (request.getDisciplinaId() != null) {
+            disciplina = disciplinaRepository.findByIdAndUsuario(request.getDisciplinaId(), usuario)
+                    .orElseThrow(() -> new ResourceNotFoundException("Disciplina não encontrada."));
+        }
+
+        sessaoRepository.save(SessaoEstudo.builder()
+                .usuario(usuario)
+                .assunto(assunto)
+                .disciplina(disciplina)
+                .inicioEm(request.getInicioEm())
+                .fimEm(request.getFimEm())
+                .duracaoMinutos(duracaoMinutos)
+                .dificuldade(request.getDificuldade())
+                .anotacao(request.getAnotacao())
+                .build());
+
+        if (assunto != null) {
+            BigDecimal horasNovas = assunto.getHorasAcumuladas().add(
+                    BigDecimal.valueOf(duracaoMinutos).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP));
+            assunto.setHorasAcumuladas(horasNovas);
+            assunto.setUltimaSessaoEm(request.getFimEm());
+
+            if (assunto.getStatusEstudo() == StatusEstudo.NAO_INICIADO) {
+                StatusEstudo anterior = assunto.getStatusEstudo();
+                assunto.setStatusEstudo(StatusEstudo.EM_ANDAMENTO);
+                eventoStatusRepository.save(EventoStatus.builder()
+                        .usuario(usuario)
+                        .assunto(assunto)
+                        .statusAnterior(anterior)
+                        .statusNovo(StatusEstudo.EM_ANDAMENTO)
+                        .build());
+            }
+
+            assuntoRepository.save(assunto);
+        }
+
+        LocalDate dataSessao = request.getFimEm().toLocalDate();
+        RegistroEstudoDiario registro = registroRepository.findByUsuarioAndData(usuario, dataSessao)
                 .orElseGet(() -> RegistroEstudoDiario.builder()
                         .usuario(usuario)
-                        .data(hoje)
+                        .data(dataSessao)
                         .sessoes(0)
                         .build());
 
@@ -74,7 +147,16 @@ public class EstudoService extends BaseService {
         registroRepository.save(registro);
 
         long ciclosConcluidos = registroRepository.somarSessoesPorUsuario(usuario.getId());
-        return new SessaoEstudoResponse(hoje.toString(), registro.getSessoes(), ciclosConcluidos);
+        return new SessaoEstudoResponse(dataSessao.toString(), registro.getSessoes(), ciclosConcluidos);
+    }
+
+    @Transactional
+    public SessaoEstudoResponse registrarSessao(String email) {
+        LocalDateTime fim = LocalDateTime.now();
+        SessaoEstudoRequest request = new SessaoEstudoRequest();
+        request.setInicioEm(fim.minusMinutes(25));
+        request.setFimEm(fim);
+        return registrarSessao(email, request);
     }
 
     @Transactional
@@ -88,5 +170,9 @@ public class EstudoService extends BaseService {
         configRepository.save(config);
 
         return obterPomodoro(email);
+    }
+
+    private boolean isTipoEstudavel(TipoItem tipo) {
+        return tipo == TipoItem.CONTEUDO || tipo == TipoItem.REVISAO || tipo == TipoItem.PRATICA;
     }
 }
