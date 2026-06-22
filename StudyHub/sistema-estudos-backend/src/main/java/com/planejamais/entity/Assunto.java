@@ -83,4 +83,10 @@ public class Assunto {
     @JoinColumn(name = "disciplina_id", nullable = false)
     private Disciplina disciplina;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recorrencia_id")
+    private Recorrencia recorrencia;
+
+    @Column(name = "indice_ocorrencia")
+    private Integer indiceOcorrencia;
 }

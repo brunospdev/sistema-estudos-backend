@@ -23,19 +23,22 @@ public class DisciplinaService extends BaseService {
     private final AssuntoDescricaoRepository assuntoDescricaoRepository;
     private final EventoStatusRepository eventoStatusRepository;
     private final PreferenciasService preferenciasService;
+    private final RecorrenciaService recorrenciaService;
 
     public DisciplinaService(UsuarioRepository usuarioRepository,
                              DisciplinaRepository disciplinaRepository,
                              AssuntoRepository assuntoRepository,
                              AssuntoDescricaoRepository assuntoDescricaoRepository,
                              EventoStatusRepository eventoStatusRepository,
-                             PreferenciasService preferenciasService) {
+                             PreferenciasService preferenciasService,
+                             RecorrenciaService recorrenciaService) {
         super(usuarioRepository);
         this.disciplinaRepository = disciplinaRepository;
         this.assuntoRepository = assuntoRepository;
         this.assuntoDescricaoRepository = assuntoDescricaoRepository;
         this.eventoStatusRepository = eventoStatusRepository;
         this.preferenciasService = preferenciasService;
+        this.recorrenciaService = recorrenciaService;
     }
 
     public List<DisciplinaResponse> listar(String email) {
@@ -239,6 +242,14 @@ public class DisciplinaService extends BaseService {
                     .build());
         }
 
+        if (request.getRecorrencia() != null) {
+            LocalDate dataBase = dataEntrega != null ? dataEntrega : request.getDataProgramada();
+            Recorrencia recorrencia = recorrenciaService.criarRecorrencia(usuario, request.getRecorrencia(), dataBase);
+            assunto.setRecorrencia(recorrencia);
+            assunto.setIndiceOcorrencia(0);
+            assuntoRepository.save(assunto);
+            recorrenciaService.gerarOcorrencias(recorrencia, assunto, 1);
+        }
 
         Map<Long, List<AssuntoDescricao>> descricoesMap = carregarDescricoesMap(Set.of(assunto.getId()));
         return toTopicoResponse(assunto, List.of(), descricoesMap);
@@ -358,6 +369,22 @@ public class DisciplinaService extends BaseService {
                 descricoesMapParaTopico(topicoId, carregarSubitens(topicoId)));
     }
 
+    @Transactional
+    public DisciplinaResponse.TopicoResponse patchRecorrencia(Long disciplinaId, Long topicoId,
+                                                              RecorrenciaRequest request, String email) {
+        Usuario usuario = getUsuario(email);
+        Assunto assunto = findTopicoOwned(disciplinaId, topicoId, email);
+        recorrenciaService.aplicarRecorrenciaEmAssunto(assunto, request, usuario);
+        List<Assunto> subitens = carregarSubitens(topicoId);
+        return toTopicoResponse(assunto, subitens, descricoesMapParaTopico(topicoId, subitens));
+    }
+
+    @Transactional
+    public void excluirRecorrencia(Long disciplinaId, Long topicoId, String escopo, String email) {
+        Usuario usuario = getUsuario(email);
+        findTopicoOwned(disciplinaId, topicoId, email);
+        recorrenciaService.removerRecorrencia(disciplinaId, topicoId, escopo, usuario);
+    }
 
     @Transactional
     public DisciplinaResponse.TopicoResponse patchAgenda(Long disciplinaId, Long topicoId, TopicoAgendaRequest request, String email) {
@@ -524,7 +551,8 @@ public class DisciplinaService extends BaseService {
                 a.getUltimaSessaoEm(),
                 parentItemId,
                 descricoes,
-                subResponses
+                subResponses,
+                recorrenciaService.toResponse(a.getRecorrencia(), a.getIndiceOcorrencia())
         );
     }
 }
