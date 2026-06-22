@@ -3,8 +3,6 @@ package com.planejamais.controller;
 import com.planejamais.dto.*;
 import com.planejamais.service.DisciplinaService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -45,13 +43,73 @@ public class DisciplinaController {
         return ResponseEntity.noContent().build();
     }
 
-    // Endpoints de tópicos dentro de disciplina
+    @PutMapping("/reorder")
+    public ResponseEntity<Void> reordenar(@Valid @RequestBody ReorderRequest request,
+                                            @AuthenticationPrincipal UserDetails user) {
+        disciplinaService.reordenar(request, user.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{id}/topicos")
     public ResponseEntity<DisciplinaResponse.TopicoResponse> adicionarTopico(
             @PathVariable Long id,
-            @Valid @RequestBody TopicoRequest request,
+            @Valid @RequestBody TopicoCreateRequest request,
             @AuthenticationPrincipal UserDetails user) {
-        return ResponseEntity.ok(disciplinaService.adicionarTopico(id, request.getNome(), user.getUsername()));
+        return ResponseEntity.ok(disciplinaService.adicionarTopico(id, request, user.getUsername()));
+    }
+
+    @PutMapping("/{disciplinaId}/topicos/{topicoId}")
+    public ResponseEntity<DisciplinaResponse.TopicoResponse> editarTopico(
+            @PathVariable Long disciplinaId,
+            @PathVariable Long topicoId,
+            @Valid @RequestBody TopicoUpdateRequest request,
+            @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(disciplinaService.editarTopico(disciplinaId, topicoId, request, user.getUsername()));
+    }
+
+    @PatchMapping("/{disciplinaId}/topicos/{topicoId}/status")
+    public ResponseEntity<DisciplinaResponse.TopicoResponse> patchStatus(
+            @PathVariable Long disciplinaId,
+            @PathVariable Long topicoId,
+            @Valid @RequestBody TopicoStatusRequest request,
+            @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(disciplinaService.patchStatus(disciplinaId, topicoId, request, user.getUsername()));
+    }
+
+    @PatchMapping("/{disciplinaId}/topicos/{topicoId}/agenda")
+    public ResponseEntity<DisciplinaResponse.TopicoResponse> patchAgenda(
+            @PathVariable Long disciplinaId,
+            @PathVariable Long topicoId,
+            @Valid @RequestBody TopicoAgendaRequest request,
+            @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(disciplinaService.patchAgenda(disciplinaId, topicoId, request, user.getUsername()));
+    }
+
+    @DeleteMapping("/{disciplinaId}/topicos/{topicoId}")
+    public ResponseEntity<Void> excluirTopico(
+            @PathVariable Long disciplinaId,
+            @PathVariable Long topicoId,
+            @AuthenticationPrincipal UserDetails user) {
+        disciplinaService.excluirTopico(disciplinaId, topicoId, user.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/topicos/reorder")
+    public ResponseEntity<Void> reordenarTopicos(
+            @PathVariable Long id,
+            @Valid @RequestBody ReorderRequest request,
+            @AuthenticationPrincipal UserDetails user) {
+        disciplinaService.reordenarTopicos(id, request, user.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{disciplinaId}/topicos/{topicoId}/avaliacao")
+    public ResponseEntity<DisciplinaResponse.TopicoResponse> patchAvaliacao(
+            @PathVariable Long disciplinaId,
+            @PathVariable Long topicoId,
+            @Valid @RequestBody TopicoAvaliacaoRequest request,
+            @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(disciplinaService.patchAvaliacao(disciplinaId, topicoId, request, user.getUsername()));
     }
 
     @PatchMapping("/{disciplinaId}/topicos/{topicoId}/toggle")
@@ -62,9 +120,32 @@ public class DisciplinaController {
         return ResponseEntity.ok(disciplinaService.toggleTopico(disciplinaId, topicoId, user.getUsername()));
     }
 
-    @Data
-    static class TopicoRequest {
-        @NotBlank(message = "Nome do tópico é obrigatório.")
-        private String nome;
+    @PostMapping("/{disciplinaId}/topicos/{topicoId}/descricoes")
+    public ResponseEntity<DescricaoResponse> adicionarDescricao(
+            @PathVariable Long disciplinaId,
+            @PathVariable Long topicoId,
+            @Valid @RequestBody DescricaoRequest request,
+            @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(disciplinaService.adicionarDescricao(disciplinaId, topicoId, request, user.getUsername()));
+    }
+
+    @PutMapping("/{disciplinaId}/topicos/{topicoId}/descricoes/{descricaoId}")
+    public ResponseEntity<DescricaoResponse> editarDescricao(
+            @PathVariable Long disciplinaId,
+            @PathVariable Long topicoId,
+            @PathVariable Long descricaoId,
+            @Valid @RequestBody DescricaoRequest request,
+            @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(disciplinaService.editarDescricao(disciplinaId, topicoId, descricaoId, request, user.getUsername()));
+    }
+
+    @DeleteMapping("/{disciplinaId}/topicos/{topicoId}/descricoes/{descricaoId}")
+    public ResponseEntity<Void> excluirDescricao(
+            @PathVariable Long disciplinaId,
+            @PathVariable Long topicoId,
+            @PathVariable Long descricaoId,
+            @AuthenticationPrincipal UserDetails user) {
+        disciplinaService.excluirDescricao(disciplinaId, topicoId, descricaoId, user.getUsername());
+        return ResponseEntity.noContent().build();
     }
 }

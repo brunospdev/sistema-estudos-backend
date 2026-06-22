@@ -1,5 +1,6 @@
 package com.planejamais.service;
 
+import com.planejamais.domain.StatusEstudo;
 import com.planejamais.dto.*;
 import com.planejamais.entity.*;
 import com.planejamais.exception.ForbiddenException;
@@ -28,7 +29,7 @@ public class AssuntoService extends BaseService {
         return new AssuntoResponse(
                 a.getId(),
                 a.getTitulo(),
-                a.isStatus(),
+                a.getStatusEstudo(),
                 a.getDataProgramada(),
                 a.getDataConclusao(),
                 a.getDisciplina().getId(),
@@ -40,7 +41,7 @@ public class AssuntoService extends BaseService {
         Usuario usuario = getUsuario(email);
         Disciplina disciplina = disciplinaRepository.findByIdAndUsuario(disciplinaId, usuario)
                 .orElseThrow(() -> new ResourceNotFoundException("Disciplina não encontrada."));
-        return assuntoRepository.findByDisciplina(disciplina).stream()
+        return assuntoRepository.findByDisciplinaOrderBySortOrderAscIdAsc(disciplina).stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -50,10 +51,16 @@ public class AssuntoService extends BaseService {
         Disciplina disciplina = disciplinaRepository.findByIdAndUsuario(request.getDisciplinaId(), usuario)
                 .orElseThrow(() -> new ResourceNotFoundException("Disciplina não encontrada."));
 
+        int maxOrder = assuntoRepository.findByDisciplinaOrderBySortOrderAscIdAsc(disciplina).stream()
+                .mapToInt(Assunto::getSortOrder)
+                .max()
+                .orElse(-1);
+
         Assunto assunto = Assunto.builder()
                 .titulo(request.getTitulo())
-                .status(false)
+                .statusEstudo(StatusEstudo.NAO_INICIADO)
                 .dataProgramada(request.getDataProgramada())
+                .sortOrder(maxOrder + 1)
                 .disciplina(disciplina)
                 .build();
 
@@ -70,7 +77,7 @@ public class AssuntoService extends BaseService {
             throw new ForbiddenException("Acesso negado.");
         }
 
-        assunto.setStatus(true);
+        assunto.setStatusEstudo(StatusEstudo.DOMINADO);
         assunto.setDataConclusao(LocalDate.now());
         assuntoRepository.save(assunto);
         return toResponse(assunto);

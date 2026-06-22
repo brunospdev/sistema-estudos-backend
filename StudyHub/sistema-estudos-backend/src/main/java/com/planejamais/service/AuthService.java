@@ -37,6 +37,7 @@ public class AuthService extends BaseService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final LoginAttemptService loginAttemptService;
+    private final PreferenciasService preferenciasService;
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Value("${jwt.refresh-expiration}")
@@ -53,13 +54,15 @@ public class AuthService extends BaseService {
                        JwtUtil jwtUtil,
                        RefreshTokenRepository refreshTokenRepository,
                        PasswordResetTokenRepository passwordResetTokenRepository,
-                       LoginAttemptService loginAttemptService) {
+                       LoginAttemptService loginAttemptService,
+                       PreferenciasService preferenciasService) {
         super(usuarioRepository);
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.refreshTokenRepository = refreshTokenRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.loginAttemptService = loginAttemptService;
+        this.preferenciasService = preferenciasService;
     }
 
     @Transactional
@@ -77,6 +80,7 @@ public class AuthService extends BaseService {
                 .build();
 
         usuarioRepository.save(usuario);
+        preferenciasService.criarPreferenciasPadrao(usuario);
         log.info("Novo usuário registrado: {}", usuario.getEmail());
 
         return buildAuthResponse(usuario, response);

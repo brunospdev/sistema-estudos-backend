@@ -22,8 +22,13 @@ public class EstudoController {
     }
 
     @PostMapping("/sessao")
-    public ResponseEntity<SessaoEstudoResponse> registrarSessao(@AuthenticationPrincipal UserDetails user) {
-        return ResponseEntity.ok(estudoService.registrarSessao(user.getUsername()));
+    public ResponseEntity<SessaoEstudoResponse> registrarSessao(
+            @AuthenticationPrincipal UserDetails user,
+            @RequestBody(required = false) @Valid SessaoEstudoRequest request) {
+        if (request == null) {
+            return ResponseEntity.ok(estudoService.registrarSessao(user.getUsername()));
+        }
+        return ResponseEntity.ok(estudoService.registrarSessao(user.getUsername(), request));
     }
 
     @PutMapping("/pomodoro/config")

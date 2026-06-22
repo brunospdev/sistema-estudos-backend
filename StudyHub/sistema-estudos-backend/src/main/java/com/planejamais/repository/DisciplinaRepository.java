@@ -14,8 +14,12 @@ public interface DisciplinaRepository extends JpaRepository<Disciplina, Long> {
 
     Optional<Disciplina> findByIdAndUsuario(Long id, Usuario usuario);
 
-    @Query("SELECT DISTINCT d FROM Disciplina d LEFT JOIN FETCH d.usuario WHERE d.usuario = :usuario ORDER BY d.dataCriacao")
+    @Query("SELECT DISTINCT d FROM Disciplina d LEFT JOIN FETCH d.usuario WHERE d.usuario = :usuario ORDER BY d.sortOrder, d.dataCriacao")
     List<Disciplina> findByUsuarioWithUsuario(Usuario usuario);
+
+    Optional<Disciplina> findByUsuarioAndOcultaTrue(Usuario usuario);
+
+    Optional<Disciplina> findByUsuarioAndNome(Usuario usuario, String nome);
 
     void deleteByUsuario_Id(Long usuarioId);
 }
