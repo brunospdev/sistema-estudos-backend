@@ -39,5 +39,6 @@ public class DisciplinaResponse {
         private Long parentItemId;
         private java.util.List<DescricaoResponse> descricoes;
         private List<TopicoResponse> subitens;
+        private RecorrenciaResponse recorrencia;
     }
 }

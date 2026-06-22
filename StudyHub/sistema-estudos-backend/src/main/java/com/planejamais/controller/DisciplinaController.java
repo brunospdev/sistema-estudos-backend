@@ -148,4 +148,23 @@ public class DisciplinaController {
         disciplinaService.excluirDescricao(disciplinaId, topicoId, descricaoId, user.getUsername());
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/{disciplinaId}/topicos/{topicoId}/recorrencia")
+    public ResponseEntity<DisciplinaResponse.TopicoResponse> patchRecorrencia(
+            @PathVariable Long disciplinaId,
+            @PathVariable Long topicoId,
+            @Valid @RequestBody RecorrenciaRequest request,
+            @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(disciplinaService.patchRecorrencia(disciplinaId, topicoId, request, user.getUsername()));
+    }
+
+    @DeleteMapping("/{disciplinaId}/topicos/{topicoId}/recorrencia")
+    public ResponseEntity<Void> excluirRecorrencia(
+            @PathVariable Long disciplinaId,
+            @PathVariable Long topicoId,
+            @RequestParam(defaultValue = "ESTA") String escopo,
+            @AuthenticationPrincipal UserDetails user) {
+        disciplinaService.excluirRecorrencia(disciplinaId, topicoId, escopo, user.getUsername());
+        return ResponseEntity.noContent().build();
+    }
 }

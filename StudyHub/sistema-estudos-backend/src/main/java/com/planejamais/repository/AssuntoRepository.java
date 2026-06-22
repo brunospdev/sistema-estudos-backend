@@ -58,4 +58,6 @@ public interface AssuntoRepository extends JpaRepository<Assunto, Long> {
 
     @Query("SELECT a FROM Assunto a JOIN FETCH a.disciplina d WHERE d.usuario.id = :usuarioId AND a.tipo IN ('SIMULADO','PROVA','ATIVIDADE','ENTREGA','PRESENCIAL','OUTRO') ORDER BY a.entregaConcluida ASC, COALESCE(a.dataRealizada, a.dataEntrega, a.dataProgramada) DESC NULLS LAST, a.sortOrder, a.id")
     List<Assunto> findEventosByUsuario(@Param("usuarioId") Long usuarioId);
+
+    List<Assunto> findByRecorrencia_IdOrderByIndiceOcorrenciaAsc(Long recorrenciaId);
 }

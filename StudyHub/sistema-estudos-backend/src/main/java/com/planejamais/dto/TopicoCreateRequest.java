@@ -24,4 +24,6 @@ public class TopicoCreateRequest {
     private String descricao;
 
     private Long parentItemId;
+
+    private RecorrenciaRequest recorrencia;
 }
