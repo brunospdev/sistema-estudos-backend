@@ -1,0 +1,41 @@
+name: CI Backend
+
+on:
+  push:
+    branches: [main, evolucoes]
+    paths:
+      - 'StudyHub/sistema-estudos-backend/**'
+      - 'sistema-estudos-backend/**'
+      - '.github/workflows/ci-backend.yml'
+  pull_request:
+    branches: [main, evolucoes]
+    paths:
+      - 'StudyHub/sistema-estudos-backend/**'
+      - 'sistema-estudos-backend/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Detect backend path
+        id: paths
+        run: |
+          if [ -d "StudyHub/sistema-estudos-backend" ]; then
+            echo "dir=StudyHub/sistema-estudos-backend" >> $GITHUB_OUTPUT
+          else
+            echo "dir=sistema-estudos-backend" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and test
+        working-directory: ${{ steps.paths.outputs.dir }}
+        run: ./mvnw verify -B
